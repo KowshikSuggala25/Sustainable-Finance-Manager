@@ -8,6 +8,7 @@ It helps users track **income, expenses, budgets**, and promotes sustainability 
 - Authentication (Signup, Login, Profile management)
 - Track income & expenses with categories
 - Budget management with alerts
+- Hide the transactions
 - Interactive visual insights (charts & reports)
 - Carbon Footprint Tracker for sustainable living
 - Export transaction history (CSV / PDF)
