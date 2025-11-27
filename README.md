@@ -26,8 +26,8 @@ It helps users track **income, expenses, budgets**, and promotes sustainability 
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/<your-username>/personal-finance-manager.git
-cd personal-finance-manager
+git clone https://github.com/<your-username>/sustainable-finance-manager.git
+cd sustainable-finance-manager
 ```
 
 ### 2. Install dependencies
