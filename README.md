@@ -2,7 +2,7 @@
 
 A modern **Personal Finance Manager** built with **Vite, React & TypeScript**, styled using **Tailwind CSS** and **shadcn-ui**.  
 It helps users track **income, expenses, budgets**, and promotes sustainability with a built-in **Carbon Footprint Tracker**.
-
+You can check the live access of the link <a href = "https://personal-finance-manager-g18h.onrender.com" >Click here</a>
 ## Features
 
 - Authentication (Signup, Login, Profile management)
