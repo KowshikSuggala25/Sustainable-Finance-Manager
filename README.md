@@ -1,13 +1,14 @@
 # Personal Finance Manager
 
 A modern **Personal Finance Manager** built with **Vite, React & TypeScript**, styled using **Tailwind CSS** and **shadcn-ui**.  
-It helps users track **income, expenses, budgets**, and promotes sustainability with a built-in **Carbon Footprint Tracker**.
-
+It helps users track **income, expenses, budgets**, and promotes sustainability with a built-in **Carbon Footprint Tracker**. <br>
+You can check the live access of the link <a href = "https://personal-finance-manager-g18h.onrender.com" >here</a>
 ## Features
 
 - Authentication (Signup, Login, Profile management)
 - Track income & expenses with categories
 - Budget management with alerts
+- Hide the transactions
 - Interactive visual insights (charts & reports)
 - Carbon Footprint Tracker for sustainable living
 - Export transaction history (CSV / PDF)
@@ -26,8 +27,8 @@ It helps users track **income, expenses, budgets**, and promotes sustainability 
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/<your-username>/personal-finance-manager.git
-cd personal-finance-manager
+git clone https://github.com/<your-username>/sustainable-finance-manager.git
+cd sustainable-finance-manager
 ```
 
 ### 2. Install dependencies
