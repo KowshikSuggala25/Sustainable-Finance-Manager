@@ -12,7 +12,16 @@ export interface Transaction {
   notes?: string;
   user_id: string;
   is_hidden?: boolean;
+  created_at: string;
 }
+
+// Helper function to check if transaction is editable (within 12 hours)
+export const isTransactionEditable = (transaction: Transaction): boolean => {
+  const createdAt = new Date(transaction.created_at);
+  const now = new Date();
+  const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+  return hoursDiff <= 12;
+};
 
 export const useTransactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -39,10 +48,11 @@ export const useTransactions = () => {
         amount: item.amount,
         type: item.type as 'income' | 'expense',
         category: item.category || 'Other',
-        date: (item as any).date || new Date().toISOString(),
-        notes: (item as any).notes || '',
+        date: item.date || new Date().toISOString(),
+        notes: item.notes || '',
         user_id: item.user_id,
-        is_hidden: item.is_hidden || false
+        is_hidden: item.is_hidden || false,
+        created_at: item.created_at || new Date().toISOString()
       })) || [];
       
       setTransactions(transformedData);
@@ -79,9 +89,10 @@ export const useTransactions = () => {
         amount: data.amount,
         type: data.type as 'income' | 'expense',
         category: data.category || 'Other',
-        date: (data as any).date || new Date().toISOString(),
-        notes: (data as any).notes || '',
-        user_id: data.user_id
+        date: data.date || new Date().toISOString(),
+        notes: data.notes || '',
+        user_id: data.user_id,
+        created_at: data.created_at || new Date().toISOString()
       };
       
       setTransactions(prev => [transformedData, ...prev]);
@@ -157,10 +168,11 @@ export const useTransactions = () => {
         amount: item.amount,
         type: item.type as 'income' | 'expense',
         category: item.category || 'Other',
-        date: (item as any).date || new Date().toISOString(),
-        notes: (item as any).notes || '',
+        date: item.date || new Date().toISOString(),
+        notes: item.notes || '',
         user_id: item.user_id,
-        is_hidden: item.is_hidden || false
+        is_hidden: item.is_hidden || false,
+        created_at: item.created_at || new Date().toISOString()
       })) || [];
       
       return transformedData;

@@ -119,7 +119,7 @@ export const RecentTransactions = ({ onNavigate }: RecentTransactionsProps) => {
               <div className="flex items-center gap-3">
                 <span
                   className={`font-semibold ${getAmountColor(
-                    transaction.amount
+                    transaction.amount,
                   )}`}
                 >
                   {formatAmount(transaction.amount)}

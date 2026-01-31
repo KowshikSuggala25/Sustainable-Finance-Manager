@@ -11,58 +11,109 @@ import { useTransactions } from "@/hooks/useTransactions";
 
 interface ExpenseChartProps {
   transactions?: any[];
+  timeRange?: "weekly" | "monthly" | "yearly";
 }
 
-export const ExpenseChart = ({ transactions }: ExpenseChartProps) => {
+export const ExpenseChart = ({
+  transactions,
+  timeRange = "yearly",
+}: ExpenseChartProps) => {
   const { transactions: allTransactions } = useTransactions();
   const dataTransactions = transactions || allTransactions;
 
-  // Generate chart data from actual transactions
+  // Generate chart data based on time range
   const generateChartData = () => {
-    // Always show all 12 months
-    const allMonths = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
+    const dataMap: {
+      [key: string]: {
+        income: number;
+        expenses: number;
+        label: string;
+        order: number;
+      };
+    } = {};
 
-    // Initialize all months with zero values
-    const monthlyData: { [key: string]: { income: number; expenses: number } } =
-      {};
-    allMonths.forEach((month) => {
-      monthlyData[month] = { income: 0, expenses: 0 };
-    });
+    // Helper to initialize periods
+    // ...
 
-    // If we have transactions, populate the data
-    if (dataTransactions && dataTransactions.length > 0) {
-      dataTransactions.forEach((transaction: any) => {
-        const date = new Date(transaction.date);
-        const monthKey = date.toLocaleDateString("en-US", { month: "short" });
+    if (timeRange === "yearly") {
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      months.forEach((m, i) => {
+        dataMap[m] = { income: 0, expenses: 0, label: m, order: i };
+      });
 
-        const amount = parseFloat(transaction.amount);
-        if (transaction.type === "income") {
-          monthlyData[monthKey].income += amount;
-        } else {
-          monthlyData[monthKey].expenses += amount;
+      dataTransactions.forEach((t) => {
+        const date = new Date(t.date);
+        const month = months[date.getMonth()];
+        // Only count if it's in the dataTransactions (which should be filtered by year already if passed from parent)
+        // But here we rely on the parent to filter by year if desired?
+        // If `transactions` is mostly all transactions... the parent manages filtering.
+        // Let's assume parent filters by time window, but we still need to bucket correctly.
+
+        // If we are showing 'Yearly', we buckets by Month.
+        // But if parent didn't filter by year, we might be summing multiple years.
+        // Assuming parent filters.
+        if (dataMap[month]) {
+          if (t.type === "income")
+            dataMap[month].income += parseFloat(t.amount);
+          else dataMap[month].expenses += parseFloat(t.amount);
+        }
+      });
+    } else if (timeRange === "monthly") {
+      // Daily breakdown for the month
+      // Assume transactions are for a specific month
+      // We can just bucket by day number 1-31
+
+      // Find number of days in the month of the first transaction? Or current month?
+      // Let's assume we show days 1-31 always or dynamically.
+      for (let i = 1; i <= 31; i++) {
+        dataMap[i] = { income: 0, expenses: 0, label: `${i}`, order: i };
+      }
+
+      dataTransactions.forEach((t) => {
+        const date = new Date(t.date);
+        const day = date.getDate();
+        if (dataMap[day]) {
+          if (t.type === "income") dataMap[day].income += parseFloat(t.amount);
+          else dataMap[day].expenses += parseFloat(t.amount);
+        }
+      });
+    } else if (timeRange === "weekly") {
+      // Daily breakdown (Mon-Sun)
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      days.forEach((d, i) => {
+        dataMap[d] = { income: 0, expenses: 0, label: d, order: i };
+      });
+
+      dataTransactions.forEach((t) => {
+        const date = new Date(t.date);
+        const day = days[date.getDay()];
+        if (dataMap[day]) {
+          if (t.type === "income") dataMap[day].income += parseFloat(t.amount);
+          else dataMap[day].expenses += parseFloat(t.amount);
         }
       });
     }
 
-    // Convert to chart format in proper order
-    return allMonths.map((month) => ({
-      month,
-      income: monthlyData[month].income,
-      expenses: monthlyData[month].expenses,
-    }));
+    return Object.values(dataMap)
+      .sort((a, b) => a.order - b.order)
+      .map((item) => ({
+        name: item.label,
+        income: item.income,
+        expenses: item.expenses,
+      }));
   };
 
   const data = generateChartData();
@@ -70,7 +121,7 @@ export const ExpenseChart = ({ transactions }: ExpenseChartProps) => {
   // Calculate max value for proper Y-axis scaling
   const maxValue = Math.max(
     ...data.map((d) => Math.max(d.income, d.expenses)),
-    100 // Minimum scale
+    100, // Minimum scale
   );
   const yAxisMax = Math.ceil(maxValue * 1.1); // Add 10% padding
 
@@ -83,9 +134,10 @@ export const ExpenseChart = ({ transactions }: ExpenseChartProps) => {
         >
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis
-            dataKey="month"
+            dataKey="name"
             stroke="hsl(var(--muted-foreground))"
             fontSize={12}
+            interval={timeRange === "monthly" ? 2 : 0} // Skip labels on monthly to avoid clutter
           />
           <YAxis
             stroke="hsl(var(--muted-foreground))"

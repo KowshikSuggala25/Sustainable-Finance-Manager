@@ -39,13 +39,20 @@ import { TransactionToggle } from "@/components/TransactionToggle";
 import { TransactionActions } from "@/components/TransactionActions";
 import { fuzzySearch } from "@/utils/fuzzySearch";
 import { exportToPDF } from "@/utils/pdfExport";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
 
 export const Transactions = () => {
-  const { transactions, loading, refetch, fetchHiddenTransactions, unhideTransaction } = useTransactions();
+  const {
+    transactions,
+    loading,
+    refetch,
+    fetchHiddenTransactions,
+    unhideTransaction,
+  } = useTransactions();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeType, setActiveType] = useState<"all" | "income" | "expense">(
-    "all"
+    "all",
   );
   const [currentPage, setCurrentPage] = useState(1);
   const transactionsPerPage = 10;
@@ -54,6 +61,18 @@ export const Transactions = () => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [hiddenTransactions, setHiddenTransactions] = useState<any[]>([]);
   const [hasVerified, setHasVerified] = useState(false);
+  const [dateFilter, setDateFilter] = useState<{
+    start: string | null;
+    end: string | null;
+  }>({
+    start: null,
+    end: null,
+  });
+
+  const handleDateFilterChange = (start: string | null, end: string | null) => {
+    setDateFilter({ start, end });
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
 
   // Filter and search transactions
   const filteredTransactions = useMemo(() => {
@@ -64,21 +83,34 @@ export const Transactions = () => {
       filtered = filtered.filter((t) => t.type === activeType);
     }
 
+    // Filter by date range
+    if (dateFilter.start) {
+      const startDate = new Date(dateFilter.start);
+      startDate.setHours(0, 0, 0, 0);
+      filtered = filtered.filter((t) => new Date(t.date) >= startDate);
+    }
+
+    if (dateFilter.end) {
+      const endDate = new Date(dateFilter.end);
+      endDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((t) => new Date(t.date) <= endDate);
+    }
+
     // Filter by search term
     if (searchQuery.trim()) {
       filtered = fuzzySearch(filtered, searchQuery);
     }
 
     return filtered;
-  }, [transactions, searchQuery, activeType]);
+  }, [transactions, searchQuery, activeType, dateFilter]);
 
   // Pagination
   const totalPages = Math.ceil(
-    filteredTransactions.length / transactionsPerPage
+    filteredTransactions.length / transactionsPerPage,
   );
   const paginatedTransactions = filteredTransactions.slice(
     (currentPage - 1) * transactionsPerPage,
-    currentPage * transactionsPerPage
+    currentPage * transactionsPerPage,
   );
 
   const handleExportPDF = () => {
@@ -89,7 +121,7 @@ export const Transactions = () => {
       totalExpenses: Math.abs(
         transactions
           .filter((t) => t.type === "expense")
-          .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+          .reduce((sum, t) => sum + Math.abs(t.amount), 0),
       ),
     };
     exportToPDF(filteredTransactions, dashboardData);
@@ -149,9 +181,12 @@ export const Transactions = () => {
 
     setIsVerifying(true);
     try {
-      const { data, error } = await supabase.functions.invoke("verify-password", {
-        body: { password: passwordInput },
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "verify-password",
+        {
+          body: { password: passwordInput },
+        },
+      );
 
       if (error) throw error;
 
@@ -161,7 +196,7 @@ export const Transactions = () => {
         setHiddenTransactions(hidden);
         setHasVerified(true);
         setPasswordInput("");
-        
+
         if (hidden.length > 0) {
           toast({
             title: "Access Granted",
@@ -229,10 +264,7 @@ export const Transactions = () => {
             Export PDF
           </Button>
 
-          <Button className="gradient-primary glow-primary gap-2 hover-scale transition-transform">
-            <Filter className="w-4 h-4" />
-            Filter
-          </Button>
+          <DateRangeFilter onFilterChange={handleDateFilterChange} />
         </div>
       </div>
 
@@ -322,7 +354,7 @@ export const Transactions = () => {
                     <div className="flex items-center gap-3">
                       <span
                         className={`font-semibold text-lg ${getAmountColor(
-                          transaction.type
+                          transaction.type,
                         )}`}
                       >
                         {formatAmount(transaction.amount, transaction.type)}
@@ -435,10 +467,7 @@ export const Transactions = () => {
                   }}
                   className="flex-1"
                 />
-                <Button
-                  onClick={handleVerifyPassword}
-                  disabled={isVerifying}
-                >
+                <Button onClick={handleVerifyPassword} disabled={isVerifying}>
                   {isVerifying ? "Verifying..." : "Verify"}
                 </Button>
               </div>
@@ -501,7 +530,7 @@ export const Transactions = () => {
                     <div className="flex items-center gap-3">
                       <span
                         className={`font-semibold text-lg ${getAmountColor(
-                          transaction.type
+                          transaction.type,
                         )}`}
                       >
                         {formatAmount(transaction.amount, transaction.type)}

@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          account_name: string
+          account_number: string | null
+          balance: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number?: string | null
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string | null
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -63,6 +93,7 @@ export type Database = {
         Row: {
           amount: number
           category: string | null
+          created_at: string
           date: string | null
           id: string
           is_hidden: boolean
@@ -74,6 +105,7 @@ export type Database = {
         Insert: {
           amount: number
           category?: string | null
+          created_at?: string
           date?: string | null
           id?: string
           is_hidden?: boolean
@@ -85,12 +117,52 @@ export type Database = {
         Update: {
           amount?: number
           category?: string | null
+          created_at?: string
           date?: string | null
           id?: string
           is_hidden?: boolean
           notes?: string | null
           title?: string
           type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transfers: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          from_account_id: string
+          id: string
+          otp_verified: boolean
+          status: string
+          to_account_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          from_account_id: string
+          id?: string
+          otp_verified?: boolean
+          status?: string
+          to_account_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          from_account_id?: string
+          id?: string
+          otp_verified?: boolean
+          status?: string
+          to_account_id?: string
           user_id?: string
         }
         Relationships: []

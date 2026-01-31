@@ -9,6 +9,12 @@ import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../hooks/useAuth";
 import { supabase } from "../integrations/supabase/client";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import {
   User,
   Mail,
   Upload,
@@ -16,13 +22,16 @@ import {
   CheckCircle,
   Edit,
   Loader2,
+  Wallet,
+  Leaf,
+  Settings as SettingsIcon,
+  ChevronRight,
 } from "lucide-react";
+import { Accounts } from "./Accounts";
+import { CarbonFootprint } from "./CarbonFootprint";
+import { Settings } from "./Settings";
 
-interface ProfileProps {
-  onNavigate?: (tab: string) => void;
-}
-
-export const Profile = ({ onNavigate }: ProfileProps) => {
+export const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,6 +43,11 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
     avatar_url: "/placeholder.svg",
     created_at: "",
   });
+
+  // Dialog states
+  const [accountsOpen, setAccountsOpen] = useState(false);
+  const [carbonOpen, setCarbonOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -133,7 +147,7 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
   };
 
   const handleAvatarUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     if (!event.target.files || !event.target.files[0] || !user) return;
 
@@ -143,17 +157,14 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
 
     setUploading(true);
     try {
-      // Upload file to storage
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data } = supabase.storage.from("avatars").getPublicUrl(fileName);
 
-      // Update profile with new avatar URL
       const { error: updateError } = await supabase
         .from("profiles")
         .update({ avatar_url: data.publicUrl })
@@ -186,6 +197,27 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
       </div>
     );
   }
+
+  const menuItems = [
+    {
+      icon: Wallet,
+      label: "Accounts",
+      description: "Manage bank accounts & transfers",
+      onClick: () => setAccountsOpen(true),
+    },
+    {
+      icon: Leaf,
+      label: "Carbon Footprint",
+      description: "Track environmental impact",
+      onClick: () => setCarbonOpen(true),
+    },
+    {
+      icon: SettingsIcon,
+      label: "Settings",
+      description: "App preferences & configuration",
+      onClick: () => setSettingsOpen(true),
+    },
+  ];
 
   return (
     <div className="min-h-screen p-6 space-y-6">
@@ -226,7 +258,7 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
           ) : (
             <Button
               className="gradient-primary glow-primary hover-scale transition-transform"
-              onClick={() => onNavigate?.("settings")}
+              onClick={() => setIsEditing(true)}
             >
               <Edit className="w-4 h-4 mr-2" />
               Edit Profile
@@ -355,6 +387,65 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
           </div>
         </div>
       </Card>
+
+      {/* Quick Actions Menu */}
+      <Card className="glass-card p-6 max-w-2xl mx-auto">
+        <h3 className="text-lg font-semibold text-foreground mb-4">
+          Quick Actions
+        </h3>
+        <div className="space-y-2">
+          {menuItems.map((item) => (
+            <button
+              key={item.label}
+              onClick={item.onClick}
+              className="w-full flex items-center justify-between p-4 rounded-lg hover:bg-muted/50 transition-colors group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <item.icon className="w-5 h-5 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium text-foreground">{item.label}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* Accounts Dialog */}
+      <Dialog open={accountsOpen} onOpenChange={setAccountsOpen}>
+        <DialogContent className="w-full h-full max-w-full max-h-full sm:max-w-4xl sm:max-h-[90vh] sm:h-auto overflow-y-auto rounded-none sm:rounded-lg">
+          <DialogHeader>
+            <DialogTitle>Accounts & Transfers</DialogTitle>
+          </DialogHeader>
+          <Accounts />
+        </DialogContent>
+      </Dialog>
+
+      {/* Carbon Footprint Dialog */}
+      <Dialog open={carbonOpen} onOpenChange={setCarbonOpen}>
+        <DialogContent className="w-full h-full max-w-full max-h-full sm:max-w-4xl sm:max-h-[90vh] sm:h-auto overflow-y-auto rounded-none sm:rounded-lg">
+          <DialogHeader>
+            <DialogTitle>Carbon Footprint</DialogTitle>
+          </DialogHeader>
+          <CarbonFootprint />
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Dialog */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="w-full h-full max-w-full max-h-full sm:max-w-4xl sm:max-h-[90vh] sm:h-auto overflow-y-auto rounded-none sm:rounded-lg">
+          <DialogHeader>
+            <DialogTitle>Settings</DialogTitle>
+          </DialogHeader>
+          <Settings />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

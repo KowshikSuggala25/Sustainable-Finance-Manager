@@ -24,7 +24,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MoreHorizontal, Edit, Trash2, EyeOff } from "lucide-react";
-import { Transaction, useTransactions } from "@/hooks/useTransactions";
+import {
+  Transaction,
+  useTransactions,
+  isTransactionEditable,
+} from "@/hooks/useTransactions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -50,6 +54,8 @@ export const TransactionActions = ({
     notes: transaction.notes || "",
   });
   const { toast } = useToast();
+
+  const isEditable = isTransactionEditable(transaction);
 
   const categories = [
     "Food",
@@ -150,6 +156,32 @@ export const TransactionActions = ({
     }
   };
 
+  const handleEditClick = () => {
+    if (!isEditable) {
+      toast({
+        title: "Cannot Edit",
+        description:
+          "Transactions can only be edited within 12 hours of creation",
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowEditDialog(true);
+  };
+
+  const handleDeleteClick = () => {
+    if (!isEditable) {
+      toast({
+        title: "Cannot Delete",
+        description:
+          "Transactions can only be deleted within 12 hours of creation",
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowDeleteDialog(true);
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -158,21 +190,31 @@ export const TransactionActions = ({
             <MoreHorizontal className="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-sm border-white/10">
-          <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
+        <DropdownMenuContent
+          align="end"
+          className="bg-background/95 backdrop-blur-sm border-white/10"
+        >
+          <DropdownMenuItem
+            onClick={handleEditClick}
+            disabled={!isEditable}
+            className={!isEditable ? "opacity-50 cursor-not-allowed" : ""}
+          >
             <Edit className="w-4 h-4 mr-2" />
-            Edit
+            Edit {!isEditable && "(Locked)"}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleHide}>
             <EyeOff className="w-4 h-4 mr-2" />
             Hide Transaction
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => setShowDeleteDialog(true)}
-            className="text-destructive"
+            onClick={handleDeleteClick}
+            disabled={!isEditable}
+            className={
+              !isEditable ? "opacity-50 cursor-not-allowed" : "text-destructive"
+            }
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete
+            Delete {!isEditable && "(Locked)"}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -184,6 +226,12 @@ export const TransactionActions = ({
             <DialogTitle>Edit Transaction</DialogTitle>
             <DialogDescription>
               Make changes to your transaction details.
+              {!isEditable && (
+                <span className="block mt-2 text-destructive font-semibold">
+                  ⚠️ This transaction is older than 12 hours and cannot be
+                  edited.
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -291,6 +339,12 @@ export const TransactionActions = ({
             <DialogDescription>
               Are you sure you want to delete this transaction? This action
               cannot be undone.
+              {!isEditable && (
+                <span className="block mt-2 text-destructive font-semibold">
+                  ⚠️ This transaction is older than 12 hours and cannot be
+                  deleted.
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
