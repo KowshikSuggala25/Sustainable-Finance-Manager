@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,12 +34,9 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  User,
-  Send,
 } from "lucide-react";
-import { useAccounts, Account } from "@/hooks/useAccounts";
+import { useAccounts } from "@/hooks/useAccounts";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Accounts = () => {
   const {
@@ -60,106 +58,64 @@ export const Accounts = () => {
   );
   const [otp, setOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [addAccountStep, setAddAccountStep] = useState(1);
 
   const [accountForm, setAccountForm] = useState({
+    email: "",
     account_name: "",
     account_number: "",
     balance: "",
-    email: "",
   });
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const [verifyingEmail, setVerifyingEmail] = useState(false);
 
   const [transferForm, setTransferForm] = useState({
     from_account_id: "",
     to_account_id: "",
     amount: "",
     description: "",
-    recipient_email: "",
   });
-  const [showEmailVerify, setShowEmailVerify] = useState(false);
-  const [recipientEmailOtp, setRecipientEmailOtp] = useState("");
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
 
   const handleVerifyEmail = async () => {
     if (!accountForm.email) {
       toast({
         title: "Error",
-        description: "Please enter an email address",
+        description: "Email is required",
         variant: "destructive",
       });
       return;
     }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(accountForm.email)) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid email address",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setVerifyingEmail(true);
+    setIsVerifyingEmail(true);
     try {
-      console.log("Verifying email:", accountForm.email);
+      // @ts-ignore
+      const { data, error } = await supabase.rpc("check_email_exists", {
+        email_to_check: accountForm.email,
+      });
 
-      // Use rpc function to check if email exists (bypasses RLS)
-      // @ts-ignore - RPC function created but types not generated
-      const { data, error } = await (supabase.rpc as any)(
-        "check_email_exists",
-        {
-          email_to_check: accountForm.email,
-        },
-      );
+      if (error) throw error;
 
-      console.log("Check email response:", { data, error });
-
-      if (error) {
-        console.error("Error checking email:", error);
-        throw error;
-      }
-
-      if (!data) {
+      if (data) {
+        setAddAccountStep(2);
+      } else {
         toast({
-          title: "Email Not Found",
-          description:
-            "This email is not registered in the system. Please use a registered email.",
+          title: "User Not Found",
+          description: "No user found with this email address.",
           variant: "destructive",
         });
-        return;
       }
-
-      setIsEmailVerified(true);
-      toast({
-        title: "Email Verified",
-        description:
-          "Email found in database. You can now create your account.",
-      });
-    } catch (error: any) {
-      console.error("Email verification error:", error);
+    } catch (error) {
+      console.error("Error verifying email:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to verify email",
+        description: "Failed to verify email. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setVerifyingEmail(false);
+      setIsVerifyingEmail(false);
     }
   };
 
   const handleAddAccount = async () => {
-    if (!isEmailVerified) {
-      toast({
-        title: "Error",
-        description: "Please verify your email first",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!accountForm.account_name) {
       toast({
         title: "Error",
@@ -180,12 +136,12 @@ export const Accounts = () => {
 
       setShowAddAccount(false);
       setAccountForm({
+        email: "",
         account_name: "",
         account_number: "",
         balance: "",
-        email: "",
       });
-      setIsEmailVerified(false);
+      setAddAccountStep(1);
     } catch (error) {
       // Error handled in hook
     } finally {
@@ -197,13 +153,11 @@ export const Accounts = () => {
     if (
       !transferForm.from_account_id ||
       !transferForm.to_account_id ||
-      !transferForm.amount ||
-      !transferForm.recipient_email
+      !transferForm.amount
     ) {
       toast({
         title: "Error",
-        description:
-          "Please fill all required fields including recipient email",
+        description: "Please fill all required fields",
         variant: "destructive",
       });
       return;
@@ -234,52 +188,34 @@ export const Accounts = () => {
 
     setIsSubmitting(true);
     try {
-      // First verify recipient email exists and send OTP
       const data = await initiateTransfer({
         from_account_id: transferForm.from_account_id,
         to_account_id: transferForm.to_account_id,
         amount,
         description: transferForm.description || undefined,
-        recipient_email: transferForm.recipient_email,
       });
 
       setPendingTransferId(data.transferId);
-      setShowTransfer(false);
-      setShowEmailVerify(true);
-    } catch (error) {
-      // Error handled in hook
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
-  const handleVerifyRecipientEmail = async () => {
-    if (!pendingTransferId || recipientEmailOtp.length !== 6) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid 6-digit OTP",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const result = await verifyTransferOTP(
-        pendingTransferId,
-        recipientEmailOtp,
-      );
-
-      if (result.success) {
-        setShowEmailVerify(false);
-        setRecipientEmailOtp("");
+      // For testing purposes - display OTP on UI if returned by backend
+      if (data.debugOtp) {
         toast({
-          title: "Email Verified",
-          description:
-            "Recipient email verified. Enter your OTP to complete transfer.",
+          title: "🧪 Test Mode OTP",
+          description: `Your verification code is: ${data.debugOtp}`,
+          duration: 10000,
         });
-        setShowOTPVerify(true);
+        // Auto-fill for convenience
+        setOtp(data.debugOtp);
       }
+
+      setShowTransfer(false);
+      setShowOTPVerify(true);
+      setTransferForm({
+        from_account_id: "",
+        to_account_id: "",
+        amount: "",
+        description: "",
+      });
     } catch (error) {
       // Error handled in hook
     } finally {
@@ -305,13 +241,6 @@ export const Accounts = () => {
         setShowOTPVerify(false);
         setPendingTransferId(null);
         setOtp("");
-        setTransferForm({
-          from_account_id: "",
-          to_account_id: "",
-          amount: "",
-          description: "",
-          recipient_email: "",
-        });
       }
     } catch (error) {
       // Error handled in hook
@@ -402,7 +331,7 @@ export const Accounts = () => {
       </div>
 
       {/* Accounts Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {accounts.length === 0 ? (
           <Card className="glass-card p-8 col-span-full text-center">
             <Wallet className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -424,39 +353,35 @@ export const Accounts = () => {
           accounts.map((account) => (
             <Card
               key={account.id}
-              className="glass-card p-6 hover:shadow-lg transition-all cursor-pointer flex flex-col items-center justify-center aspect-square gap-3 hover:scale-105"
-              onClick={() => {
-                setSelectedAccount(account);
-                setTransferForm((prev) => ({
-                  ...prev,
-                  to_account_id: account.id,
-                  recipient_email: account.associated_email || "",
-                  amount: "",
-                  from_account_id: "",
-                }));
-              }}
+              className="glass-card p-6 hover:shadow-lg transition-shadow"
             >
-              <div className="flex w-full justify-end absolute top-2 right-2">
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 rounded-full bg-primary/10">
+                  <Wallet className="w-6 h-6 text-primary" />
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteAccount(account.id);
-                  }}
+                  onClick={() => deleteAccount(account.id)}
+                  className="text-muted-foreground hover:text-destructive"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
 
-              <div className="p-4 rounded-full bg-primary/10">
-                <User className="w-8 h-8 text-primary" />
-              </div>
-
-              <h3 className="font-semibold text-xl text-center">
+              <h3 className="font-semibold text-lg mb-1">
                 {account.account_name}
               </h3>
+              {account.account_number && (
+                <p className="text-sm text-muted-foreground mb-3">
+                  •••• {account.account_number.slice(-4)}
+                </p>
+              )}
+
+              <div className="flex items-center gap-1 text-2xl font-bold text-foreground">
+                <IndianRupee className="w-5 h-5" />
+                {account.balance.toLocaleString("en-IN")}
+              </div>
             </Card>
           ))
         )}
@@ -512,37 +437,28 @@ export const Accounts = () => {
       )}
 
       {/* Add Account Dialog */}
-      <Dialog
-        open={showAddAccount}
-        onOpenChange={(open) => {
-          setShowAddAccount(open);
-          if (!open) {
-            setAccountForm({
-              account_name: "",
-              account_number: "",
-              balance: "",
-              email: "",
-            });
-            setIsEmailVerified(false);
-          }
-        }}
-      >
+      <Dialog open={showAddAccount} onOpenChange={setShowAddAccount}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Account</DialogTitle>
+            <DialogTitle>
+              {addAccountStep === 1
+                ? "Verify Email"
+                : "Add New Account Details"}
+            </DialogTitle>
             <DialogDescription>
-              Verify your email and create a new account
+              {addAccountStep === 1
+                ? "Enter the email associated with the account"
+                : "Enter the account details"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            {/* Email Verification Section */}
-            <div className="space-y-2">
-              <Label htmlFor="account_email">Email Address *</Label>
-              <div className="flex gap-2">
+          {addAccountStep === 1 ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address *</Label>
                 <Input
-                  id="account_email"
+                  id="email"
                   type="email"
-                  placeholder="your@email.com"
+                  placeholder="user@example.com"
                   value={accountForm.email}
                   onChange={(e) =>
                     setAccountForm({
@@ -550,93 +466,76 @@ export const Accounts = () => {
                       email: e.target.value,
                     })
                   }
-                  disabled={isEmailVerified}
                 />
-                <Button
-                  onClick={handleVerifyEmail}
-                  disabled={
-                    verifyingEmail || isEmailVerified || !accountForm.email
-                  }
-                  className={
-                    isEmailVerified ? "bg-success" : "gradient-primary"
-                  }
-                >
-                  {verifyingEmail
-                    ? "Verifying..."
-                    : isEmailVerified
-                      ? "Verified"
-                      : "Verify"}
-                </Button>
               </div>
-              {isEmailVerified && (
-                <p className="text-xs text-success flex items-center gap-1">
-                  <span>✓</span> Email verified successfully
-                </p>
-              )}
             </div>
-
-            {/* Account Details - Only show after email verification */}
-            {isEmailVerified && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="account_name">Account Name *</Label>
-                  <Input
-                    id="account_name"
-                    placeholder="e.g., Savings Account"
-                    value={accountForm.account_name}
-                    onChange={(e) =>
-                      setAccountForm({
-                        ...accountForm,
-                        account_name: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="account_number">
-                    Account Number (Optional)
-                  </Label>
-                  <Input
-                    id="account_number"
-                    placeholder="e.g., 1234567890"
-                    value={accountForm.account_number}
-                    onChange={(e) =>
-                      setAccountForm({
-                        ...accountForm,
-                        account_number: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="balance">Initial Balance</Label>
-                  <Input
-                    id="balance"
-                    type="number"
-                    placeholder="0.00"
-                    value={accountForm.balance}
-                    onChange={(e) =>
-                      setAccountForm({
-                        ...accountForm,
-                        balance: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </>
-            )}
-          </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="account_name">Account Name *</Label>
+                <Input
+                  id="account_name"
+                  placeholder="e.g., Savings Account"
+                  value={accountForm.account_name}
+                  onChange={(e) =>
+                    setAccountForm({
+                      ...accountForm,
+                      account_name: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="account_number">
+                  Account Number (Optional)
+                </Label>
+                <Input
+                  id="account_number"
+                  placeholder="e.g., 1234567890"
+                  value={accountForm.account_number}
+                  onChange={(e) =>
+                    setAccountForm({
+                      ...accountForm,
+                      account_number: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="balance">Initial Balance</Label>
+                <Input
+                  id="balance"
+                  type="number"
+                  placeholder="0.00"
+                  value={accountForm.balance}
+                  onChange={(e) =>
+                    setAccountForm({ ...accountForm, balance: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddAccount(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAddAccount(false);
+                setAddAccountStep(1);
+              }}
+            >
               Cancel
             </Button>
-            {isEmailVerified && (
+            {addAccountStep === 1 ? (
+              <Button onClick={handleVerifyEmail} disabled={isVerifyingEmail}>
+                {isVerifyingEmail ? "Verifying..." : "Next"}
+              </Button>
+            ) : (
               <Button
                 onClick={handleAddAccount}
                 disabled={isSubmitting}
                 className="gradient-primary"
               >
-                {isSubmitting ? "Creating..." : "Create Account"}
+                {isSubmitting ? "Adding..." : "Add Account"}
               </Button>
             )}
           </DialogFooter>
@@ -710,24 +609,6 @@ export const Accounts = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="recipient_email">Recipient Email *</Label>
-              <Input
-                id="recipient_email"
-                type="email"
-                placeholder="recipient@example.com"
-                value={transferForm.recipient_email}
-                onChange={(e) =>
-                  setTransferForm({
-                    ...transferForm,
-                    recipient_email: e.target.value,
-                  })
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                Enter the email of the account holder to verify their identity
-              </p>
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="description">Description (Optional)</Label>
               <Input
                 id="description"
@@ -754,184 +635,6 @@ export const Accounts = () => {
               {isSubmitting ? "Sending OTP..." : "Continue"}
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Email Verification Dialog */}
-      <Dialog open={showEmailVerify} onOpenChange={setShowEmailVerify}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Verify Recipient Email</DialogTitle>
-            <DialogDescription>
-              Enter the 6-digit OTP sent to the recipient's email:{" "}
-              {transferForm.recipient_email}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-center py-6">
-            <InputOTP
-              maxLength={6}
-              value={recipientEmailOtp}
-              onChange={setRecipientEmailOtp}
-            >
-              <InputOTPGroup>
-                <InputOTPSlot index={0} />
-                <InputOTPSlot index={1} />
-                <InputOTPSlot index={2} />
-                <InputOTPSlot index={3} />
-                <InputOTPSlot index={4} />
-                <InputOTPSlot index={5} />
-              </InputOTPGroup>
-            </InputOTP>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowEmailVerify(false);
-                setRecipientEmailOtp("");
-                setPendingTransferId(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleVerifyRecipientEmail}
-              disabled={isSubmitting || recipientEmailOtp.length !== 6}
-              className="gradient-primary"
-            >
-              {isSubmitting ? "Verifying..." : "Verify Email"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Account Details & Transfer Dialog */}
-      <Dialog
-        open={!!selectedAccount}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedAccount(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <User className="w-5 h-5 text-primary" />
-              {selectedAccount?.account_name}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedAccount?.associated_email ||
-                "No email linked to this contact"}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            {/* Recent Transactions for this Account */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-muted-foreground">
-                Recent Transactions
-              </h4>
-              <div className="max-h-[200px] overflow-y-auto space-y-2 pr-2">
-                {transfers
-                  .filter(
-                    (t) =>
-                      t.from_account_id === selectedAccount?.id ||
-                      t.to_account_id === selectedAccount?.id,
-                  )
-                  .slice(0, 5)
-                  .map((t) => (
-                    <div
-                      key={t.id}
-                      className="text-sm flex justify-between items-center p-2 rounded bg-muted/20"
-                    >
-                      <span className="text-muted-foreground">
-                        {new Date(t.created_at).toLocaleDateString()}
-                      </span>
-                      <span
-                        className={`font-bold ${
-                          t.to_account_id === selectedAccount?.id
-                            ? "text-success"
-                            : "text-destructive"
-                        }`}
-                      >
-                        {t.to_account_id === selectedAccount?.id ? "+" : "-"}
-                        {formatCurrency(t.amount)}
-                      </span>
-                    </div>
-                  ))}
-                {transfers.filter(
-                  (t) =>
-                    t.from_account_id === selectedAccount?.id ||
-                    t.to_account_id === selectedAccount?.id,
-                ).length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-2">
-                    No recent transactions
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Send Money Section */}
-            <div className="pt-4 border-t border-border">
-              <h4 className="font-semibold mb-3">Send Money</h4>
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <Label>Pay From</Label>
-                  <Select
-                    value={transferForm.from_account_id}
-                    onValueChange={(value) =>
-                      setTransferForm({
-                        ...transferForm,
-                        from_account_id: value,
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Source Account" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts
-                        .filter((a) => a.id !== selectedAccount?.id)
-                        .map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {a.account_name} ({formatCurrency(a.balance)})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label>Amount</Label>
-                  <Input
-                    type="number"
-                    placeholder="0.00"
-                    value={transferForm.amount}
-                    onChange={(e) =>
-                      setTransferForm({
-                        ...transferForm,
-                        amount: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <Button
-                  className="w-full gradient-primary gap-2"
-                  onClick={handleInitiateTransfer}
-                  disabled={
-                    isSubmitting ||
-                    !transferForm.amount ||
-                    !transferForm.from_account_id
-                  }
-                >
-                  <Send className="w-4 h-4" />
-                  Send Money
-                </Button>
-              </div>
-            </div>
-          </div>
         </DialogContent>
       </Dialog>
 

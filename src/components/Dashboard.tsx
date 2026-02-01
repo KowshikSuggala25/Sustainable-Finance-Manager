@@ -237,9 +237,9 @@ export const Dashboard = ({ onNavigate }: DashboardProps) => {
       case "danger":
         return "gradient-danger";
       case "info":
-        return "gradient-info";
+        return "gradient-info glow-info";
       case "warning":
-        return "gradient-primary";
+        return "gradient-success glow-success";
       default:
         return "glass-card";
     }

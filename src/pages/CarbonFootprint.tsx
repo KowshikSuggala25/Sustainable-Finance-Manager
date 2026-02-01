@@ -38,7 +38,7 @@ export const CarbonFootprint = () => {
     console.log(
       "Calculating carbon footprint for",
       transactions?.length || 0,
-      "transactions"
+      "transactions",
     );
 
     if (!transactions || transactions.length === 0) {
@@ -53,31 +53,33 @@ export const CarbonFootprint = () => {
       if (transaction.type === "expense") {
         // Normalize category names to match mapping keys
         let category = transaction.category || "Other";
-        
+
         // Map common variations to standard categories (case-insensitive)
         const categoryMap: { [key: string]: string } = {
-          "transportation": "Transportation",
-          "travel": "Travel",
+          transportation: "Transportation",
+          travel: "Travel",
           "food & dining": "Food & Dining",
           "food and dining": "Food & Dining",
-          "food": "Food & Dining",
-          "dining": "Food & Dining",
-          "shopping": "Shopping",
+          food: "Food & Dining",
+          dining: "Food & Dining",
+          shopping: "Shopping",
           "bills & utilities": "Bills & Utilities",
           "bills and utilities": "Bills & Utilities",
-          "utilities": "Bills & Utilities",
-          "entertainment": "Entertainment",
-          "healthcare": "Healthcare",
+          utilities: "Bills & Utilities",
+          entertainment: "Entertainment",
+          healthcare: "Healthcare",
           "other expenses": "Other expenses",
-          "housing": "Housing",
-          "insurance": "Insurance",
-          "savings": "Savings",
-          "other": "Other"
+          housing: "Housing",
+          insurance: "Insurance",
+          savings: "Savings",
+          other: "Other",
         };
-        
-        const normalizedCategory = categoryMap[category.toLowerCase()] || category;
+
+        const normalizedCategory =
+          categoryMap[category.toLowerCase()] || category;
         const amount = Math.abs(parseFloat(transaction.amount));
-        categorySpending[normalizedCategory] = (categorySpending[normalizedCategory] || 0) + amount;
+        categorySpending[normalizedCategory] =
+          (categorySpending[normalizedCategory] || 0) + amount;
       }
     });
 
@@ -188,7 +190,7 @@ export const CarbonFootprint = () => {
 
   const totalFootprint = footprintData.reduce(
     (sum, item) => sum + item.value,
-    0
+    0,
   );
 
   const handleViewTips = async () => {
@@ -214,18 +216,13 @@ export const CarbonFootprint = () => {
     try {
       const { data, error } = await supabase.functions.invoke(
         "generate-carbon-tips",
-        {
-          headers: {
-            Authorization: `Bearer ${
-              (
-                await supabase.auth.getSession()
-              ).data.session?.access_token
-            }`,
-          },
-        }
       );
 
       if (error) throw error;
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       setTips(data.tips || []);
       setShowTipsModal(true);
@@ -258,21 +255,20 @@ export const CarbonFootprint = () => {
           </p>
         </div>
 
+        <Button
+          className="gradient-success glow-primary hover-scale transition-transform"
+          onClick={handleViewTips}
+          disabled={isLoadingTips}
+        >
+          {isLoadingTips ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Recycle className="w-4 h-4 mr-2" />
+          )}
+          {isLoadingTips ? "Generating..." : "View AI Tips"}
+        </Button>
+
         <Dialog open={showTipsModal} onOpenChange={setShowTipsModal}>
-          <DialogTrigger asChild>
-            <Button
-              className="gradient-success glow-primary hover-scale transition-transform"
-              onClick={handleViewTips}
-              disabled={isLoadingTips}
-            >
-              {isLoadingTips ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Recycle className="w-4 h-4 mr-2" />
-              )}
-              {isLoadingTips ? "Generating..." : "View AI Tips"}
-            </Button>
-          </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -311,9 +307,10 @@ export const CarbonFootprint = () => {
           </div>
           <div>
             <h2 className="text-4xl font-bold text-foreground">
-              {totalFootprint > 0 
-                ? `${(totalFootprint * 1000).toFixed(2)} kg` 
-                : "0.00 kg"} CO₂
+              {totalFootprint > 0
+                ? `${(totalFootprint * 1000).toFixed(2)} kg`
+                : "0.00 kg"}{" "}
+              CO₂
             </h2>
             <p className="text-lg text-muted-foreground">
               ({totalFootprint.toFixed(3)} tons) • (
@@ -352,9 +349,7 @@ export const CarbonFootprint = () => {
                   <p className="text-2xl font-bold text-foreground">
                     {item.valueKg.toFixed(2)} kg
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    CO₂ emissions
-                  </p>
+                  <p className="text-xs text-muted-foreground">CO₂ emissions</p>
                 </div>
               </div>
             </Card>

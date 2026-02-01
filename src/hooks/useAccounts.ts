@@ -9,7 +9,6 @@ export interface Account {
   account_name: string;
   account_number: string | null;
   balance: number;
-  associated_email?: string;
   created_at: string;
   updated_at: string;
 }
@@ -84,8 +83,7 @@ export const useAccounts = () => {
         .insert([{
           ...accountData,
           user_id: user.id,
-          balance: accountData.balance || 0,
-          associated_email: accountData.associated_email
+          balance: accountData.balance || 0
         }])
         .select()
         .single();
@@ -114,40 +112,20 @@ export const useAccounts = () => {
     to_account_id: string;
     amount: number;
     description?: string;
-    recipient_email: string;
   }) => {
     if (!user) return;
 
     try {
-      // First, verify that recipient email exists in profiles table
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, email')
-        .eq('email', transferData.recipient_email)
-        .single();
-
-      if (profileError || !profileData) {
-        toast({
-          title: "Email Not Found",
-          description: "The recipient email is not registered in the system.",
-          variant: "destructive",
-        });
-        throw new Error("Recipient email not found");
-      }
-
-      // Call edge function to initiate transfer and send OTP to recipient email
+      // Call edge function to initiate transfer and send OTP email
       const { data, error } = await supabase.functions.invoke('initiate-transfer', {
-        body: {
-          ...transferData,
-          recipient_user_id: profileData.id
-        }
+        body: transferData
       });
 
       if (error) throw error;
       
       toast({
         title: "OTP Sent",
-        description: `A verification code has been sent to ${transferData.recipient_email}`,
+        description: "A verification code has been sent to your email.",
       });
       
       await fetchTransfers();
