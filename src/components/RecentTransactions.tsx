@@ -71,7 +71,7 @@ export const RecentTransactions = ({ onNavigate }: RecentTransactionsProps) => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground">
-          Transaction History
+          Recent Transaction History
         </h3>
         <Button
           onClick={() => onNavigate?.("transactions")}

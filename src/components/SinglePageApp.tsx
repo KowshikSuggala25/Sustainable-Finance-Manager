@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
-import { FinancialChatbot } from "@/components/FinancialChatBot";
+import { FinancialChatbot } from "@/components/FinancialChatbot";
 import { Moon, Sun } from "lucide-react";
 
 export const SinglePageApp = () => {
@@ -40,7 +40,6 @@ export const SinglePageApp = () => {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
-            <Receipt className="h-6 w-6 text-primary" />
             <span className="font-bold text-xl">₹ Finance Manager</span>
           </div>
           <div className="flex items-center gap-2">

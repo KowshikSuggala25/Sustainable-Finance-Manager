@@ -301,12 +301,8 @@ export const Accounts = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground font-heading">
-            Accounts & Transfers
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your accounts and transfer money securely
-          </p>
+          <h1 className="text-3xl font-bold text-foreground font-heading"></h1>
+          <p className="text-muted-foreground"></p>
         </div>
 
         <div className="flex items-center gap-3">

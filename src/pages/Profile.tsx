@@ -227,9 +227,6 @@ export const Profile = () => {
           <h1 className="text-3xl font-bold text-foreground font-heading">
             Profile Settings
           </h1>
-          <p className="text-muted-foreground">
-            Manage your personal information and preferences
-          </p>
         </div>
 
         <div className="flex items-center gap-3">

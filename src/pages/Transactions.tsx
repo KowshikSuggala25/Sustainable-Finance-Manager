@@ -249,9 +249,7 @@ export const Transactions = () => {
           <h1 className="text-3xl font-bold text-foreground font-heading">
             All Transactions
           </h1>
-          <p className="text-muted-foreground">
-            View and manage your financial transactions
-          </p>
+          <p className="text-muted-foreground"></p>
         </div>
 
         <div className="flex items-center gap-3">

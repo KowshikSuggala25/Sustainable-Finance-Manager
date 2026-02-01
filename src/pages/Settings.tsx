@@ -122,7 +122,7 @@ export const Settings = () => {
 
   const handleInputChange = (
     field: string,
-    value: string | boolean | number
+    value: string | boolean | number,
   ) => {
     setSettings((prev) => ({ ...prev, [field]: value }));
   };
@@ -163,10 +163,8 @@ export const Settings = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground font-heading">
-            Settings
-          </h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold text-foreground font-heading"></h1>
+          <p className="text-xl font-bold text-foreground">
             Customize your app experience and preferences
           </p>
         </div>

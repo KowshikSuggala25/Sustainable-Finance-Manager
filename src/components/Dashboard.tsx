@@ -10,7 +10,7 @@ import {
 import {
   TrendingUp,
   TrendingDown,
-  DollarSign,
+  IndianRupee,
   Wallet,
   PlusCircle,
   Eye,
@@ -212,12 +212,12 @@ export const Dashboard = ({ onNavigate }: DashboardProps) => {
       amount: netSavings,
       icon: Wallet,
       variant: "info" as const,
-      trend: "+24.1%",
+      trend: "+4.1%",
     },
     {
       title: "Budget Remaining",
       amount: budgetRemaining,
-      icon: DollarSign,
+      icon: IndianRupee,
       variant: "warning" as const,
       trend:
         monthlyBudget > 0 ? `${budgetUsed.toFixed(1)}% used` : "Net balance",
@@ -402,14 +402,7 @@ export const Dashboard = ({ onNavigate }: DashboardProps) => {
 
       {/* Recent Transactions */}
       <Card className="glass-card p-6">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-foreground">
-            Recent Transactions
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Latest financial activity
-          </p>
-        </div>
+        <div className="mb-4"></div>
         <RecentTransactions onNavigate={onNavigate} />
       </Card>
     </div>

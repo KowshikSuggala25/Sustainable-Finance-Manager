@@ -67,7 +67,7 @@ export const useTransactions = () => {
     fetchTransactions();
   }, [fetchTransactions]);
 
-  const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'user_id'>) => {
+  const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'user_id' | 'created_at'>) => {
     if (!user) return;
 
     try {

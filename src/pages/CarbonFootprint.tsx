@@ -247,12 +247,8 @@ export const CarbonFootprint = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground font-heading">
-            Carbon Footprint
-          </h1>
-          <p className="text-muted-foreground">
-            Track your environmental impact and make sustainable choices
-          </p>
+          <h1 className="text-3xl font-bold text-foreground font-heading"></h1>
+          <p className="text-muted-foreground"></p>
         </div>
 
         <Button
